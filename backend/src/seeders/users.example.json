@@ -1,0 +1,16 @@
+[
+  {
+    "email": "admin@gymstack.local",
+    "name": "Platform Admin",
+    "password": "Password123!",
+    "roleKey": "super_admin",
+    "requireEmailOtp": true
+  },
+  {
+    "email": "staff@gymstack.local",
+    "name": "Platform Staff",
+    "password": "Password123!",
+    "roleKey": "super_admin_staff",
+    "requireEmailOtp": false
+  }
+]

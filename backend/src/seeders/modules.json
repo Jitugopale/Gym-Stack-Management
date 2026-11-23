@@ -1,0 +1,11 @@
+[
+  { "key": "gyms", "name": "Gyms" },
+  { "key": "billing", "name": "Billing" },
+  { "key": "users", "name": "Users" },
+  { "key": "access", "name": "Access" },
+  { "key": "dashboard", "name": "Dashboard" },
+  { "key": "members", "name": "Members" },
+  { "key": "plans", "name": "Plans" },
+  { "key": "payments", "name": "Payments" },
+  { "key": "staff", "name": "Staff" }
+]

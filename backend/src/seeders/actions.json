@@ -1,0 +1,7 @@
+[
+  { "key": "view", "name": "View" },
+  { "key": "create", "name": "Create" },
+  { "key": "update", "name": "Update" },
+  { "key": "delete", "name": "Delete" },
+  { "key": "manage", "name": "Manage" }
+]

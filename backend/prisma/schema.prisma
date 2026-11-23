@@ -1,0 +1,257 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RoleScope {
+  platform
+  gym
+}
+
+enum MembershipStatus {
+  active
+  frozen
+  expired
+  cancelled
+}
+
+enum GymStatus {
+  active
+  grace
+  soft_lock
+  login_blocked
+}
+
+enum InvoiceStatus {
+  pending
+  paid
+  overdue
+  cancelled
+}
+
+model User {
+  id           String         @id @default(cuid())
+  email        String         @unique
+  passwordHash String
+  name         String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  platformUser PlatformUser?
+  gymUsers     GymUser[]
+  emailOtps    EmailOtp[]
+}
+
+model PlatformUser {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  roleId          String
+  requireEmailOtp Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role            Role     @relation(fields: [roleId], references: [id])
+}
+
+model SubscriptionPlan {
+  id                 String       @id @default(cuid())
+  key                String       @unique
+  name               String
+  durationMonths     Int
+  priceInr           Decimal      @db.Decimal(10, 2)
+  isActive           Boolean      @default(true)
+  sortOrder          Int          @default(0)
+  /// FitPlus-style module keys enabled by default when a gym is created on this plan
+  defaultFeatureKeys String[]     @default([])
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  gyms               Gym[]
+  invoices           GymInvoice[]
+}
+
+model Gym {
+  id                 String             @id @default(cuid())
+  name               String
+  slug               String             @unique
+  requireOwner2fa    Boolean            @default(false)
+  status             GymStatus          @default(active)
+  subscriptionPlanId String?
+  periodEndsAt       DateTime?
+  graceEndsAt        DateTime?
+  softLockEndsAt     DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  subscriptionPlan   SubscriptionPlan?  @relation(fields: [subscriptionPlanId], references: [id], onDelete: SetNull)
+  featureToggles     GymFeatureToggle[]
+  gymUsers           GymUser[]
+  members            Member[]
+  plans              MembershipPlan[]
+  payments           Payment[]
+  invoices           GymInvoice[]
+}
+
+/// Per-gym module switches (seeded from plan defaults; SA can override)
+model GymFeatureToggle {
+  id         String   @id @default(cuid())
+  gymId      String
+  featureKey String
+  isEnabled  Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  gym        Gym      @relation(fields: [gymId], references: [id], onDelete: Cascade)
+
+  @@unique([gymId, featureKey])
+  @@index([gymId])
+}
+
+model GymInvoice {
+  id          String            @id @default(cuid())
+  gymId       String
+  planId      String?
+  invoiceRef  String            @unique
+  amount      Decimal           @db.Decimal(10, 2)
+  status      InvoiceStatus     @default(pending)
+  periodStart DateTime?
+  periodEnd   DateTime?
+  dueDate     DateTime
+  paidAt      DateTime?
+  note        String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  gym         Gym               @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  plan        SubscriptionPlan? @relation(fields: [planId], references: [id], onDelete: SetNull)
+
+  @@index([gymId])
+  @@index([status])
+}
+
+model EmailOtp {
+  id           String    @id @default(cuid())
+  userId       String
+  realm        String
+  gymId        String?
+  codeHash     String
+  expiresAt    DateTime
+  consumedAt   DateTime?
+  attemptCount Int       @default(0)
+  maxAttempts  Int       @default(5)
+  createdAt    DateTime  @default(now())
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, realm])
+}
+
+model GymUser {
+  id              String   @id @default(cuid())
+  userId          String
+  gymId           String
+  roleId          String
+  requireEmailOtp Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gym             Gym      @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  role            Role     @relation(fields: [roleId], references: [id])
+
+  @@unique([userId, gymId])
+  @@index([gymId])
+}
+
+model Module {
+  id          String       @id @default(cuid())
+  key         String       @unique
+  name        String
+  permissions Permission[]
+}
+
+model Action {
+  id          String       @id @default(cuid())
+  key         String       @unique
+  name        String
+  permissions Permission[]
+}
+
+model Permission {
+  id              String           @id @default(cuid())
+  key             String           @unique
+  scope           RoleScope
+  moduleId        String
+  actionId        String
+  module          Module           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  action          Action           @relation(fields: [actionId], references: [id], onDelete: Cascade)
+  rolePermissions RolePermission[]
+
+  @@index([moduleId, actionId])
+}
+
+model Role {
+  id              String           @id @default(cuid())
+  key             String           @unique
+  name            String
+  scope           RoleScope
+  rolePermissions RolePermission[]
+  platformUsers   PlatformUser[]
+  gymUsers        GymUser[]
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}
+
+model MembershipPlan {
+  id           String    @id @default(cuid())
+  gymId        String
+  name         String
+  durationDays Int
+  price        Decimal   @db.Decimal(10, 2)
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  gym          Gym       @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  members      Member[]
+  payments     Payment[]
+
+  @@index([gymId])
+}
+
+model Member {
+  id        String           @id @default(cuid())
+  gymId     String
+  planId    String?
+  name      String
+  email     String?
+  phone     String?
+  status    MembershipStatus @default(active)
+  startDate DateTime?
+  endDate   DateTime?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  gym       Gym              @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  plan      MembershipPlan?  @relation(fields: [planId], references: [id], onDelete: SetNull)
+  payments  Payment[]
+
+  @@index([gymId])
+}
+
+model Payment {
+  id        String          @id @default(cuid())
+  gymId     String
+  memberId  String
+  planId    String?
+  amount    Decimal         @db.Decimal(10, 2)
+  method    String          @default("cash")
+  note      String?
+  paidAt    DateTime        @default(now())
+  createdAt DateTime        @default(now())
+  gym       Gym             @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  member    Member          @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  plan      MembershipPlan? @relation(fields: [planId], references: [id], onDelete: SetNull)
+
+  @@index([gymId])
+}

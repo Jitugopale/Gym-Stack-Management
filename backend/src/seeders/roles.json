@@ -1,0 +1,70 @@
+[
+  {
+    "key": "super_admin",
+    "name": "Super Admin",
+    "scope": "platform",
+    "permissions": [
+      "gyms.view",
+      "gyms.create",
+      "gyms.update",
+      "gyms.delete",
+      "gym_features.manage",
+      "billing.view",
+      "billing.manage",
+      "users.view",
+      "users.manage",
+      "access.view",
+      "access.manage"
+    ]
+  },
+  {
+    "key": "super_admin_staff",
+    "name": "Platform Staff",
+    "scope": "platform",
+    "permissions": [
+      "gyms.view",
+      "gyms.create",
+      "gyms.update",
+      "gym_features.manage",
+      "billing.view",
+      "users.view",
+      "access.view"
+    ]
+  },
+  {
+    "key": "gym_owner",
+    "name": "Gym Owner",
+    "scope": "gym",
+    "permissions": [
+      "dashboard.view",
+      "members.view",
+      "members.create",
+      "members.update",
+      "members.delete",
+      "plans.view",
+      "plans.create",
+      "plans.update",
+      "plans.delete",
+      "payments.view",
+      "payments.create",
+      "staff.view",
+      "staff.manage",
+      "gym_billing.view"
+    ]
+  },
+  {
+    "key": "gym_staff",
+    "name": "Gym Staff",
+    "scope": "gym",
+    "permissions": [
+      "dashboard.view",
+      "members.view",
+      "members.create",
+      "members.update",
+      "plans.view",
+      "payments.view",
+      "payments.create",
+      "gym_billing.view"
+    ]
+  }
+]
